@@ -1,4 +1,6 @@
-ARG NODE_VERSION=14
+## modify according to node.js version
+## this should be automated
+ARG NODE_VERSION=22
 ARG OS=alpine
 
 #### Stage BASE ########################################################################################################
@@ -23,6 +25,8 @@ RUN set -ex && \
     avahi-compat-libdns_sd \
     dbus \
     ffmpeg \
+## tried libcap2-bin for setcap later but raised an error
+##    libcap \
     bluez &&\
     dbus-uuidgen --ensure && \
     mkdir -p /usr/src/node-red /data && \
@@ -41,9 +45,11 @@ COPY package.json .
 FROM base AS build
 
 # Install Build tools
+## npx check did not work anymore, install had to be modified - is it still the case?
 RUN apk add --no-cache --virtual buildtools build-base linux-headers udev eudev-dev avahi-dev libusb-dev libc-dev python3 && \
-    npx npm-check-updates -u && \
-    npm install --unsafe-perm --no-update-notifier --only=production --no-optional && \
+##    npx npm-check-updates -u && \
+##    npm install --unsafe-perm --no-update-notifier --only=production --no-optional && \
+    npm install --unsafe-perm --no-update-notifier --omit=dev --no-optional && \
     /tmp/remove_native_gpio.sh && \
     npm dedupe && \
     npm cache clean --force && \
