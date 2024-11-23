@@ -6,12 +6,12 @@ echo "node-red version: ${NODE_RED_VERSION}"
 echo "#########################################################################"
 
 docker build --no-cache \
-    --build-arg ARCH=amd64 \
-    --build-arg NODE_VERSION=12 \
+    --build-arg ARCH=arm32v7 \
+    --build-arg NODE_VERSION=22 \
     --build-arg NODE_RED_VERSION=${NODE_RED_VERSION} \
     --build-arg OS=alpine \
     --build-arg BUILD_DATE="$(date +"%Y-%m-%dT%H:%M:%SZ")" \
     --build-arg TAG_SUFFIX=default \
     --file Dockerfile \
     --squash \
-    --tag testing:node-red-build .
+    --tag 8x-node-red-22:arm32v7 .
