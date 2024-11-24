@@ -1,25 +1,41 @@
 #!/bin/bash
 
 function detect_zigbee_device {
-	if usb_dev=$(lsusb -d 0451:); then
-		usb_dev_count=$(ls -1 /dev/ttyACM* 2>/dev/null | wc -l)
-		if [ "$usb_dev_count" -gt 1 ]; then
-			>&2 echo "There are multiple devices connected, that could be Zigbee USB adaptors. Please check data/zigbee/configuration.yml, if the device is wrong. /dev/ttyACM0 is used as the default."
+        if usb_dev=$(lsusb -d 0451:); then
+                usb_dev_count=$(ls -1 /dev/ttyACM* 2>/dev/null | wc -l)
+                if [ "$usb_dev_count" -gt 1 ]; then
+                        >&2 echo "There are multiple devices connected, that could be Zigbee USB adaptors.
+                                  Please check data/zigbee/configuration.yml, if the device is wrong.
+                                  /dev/ttyACM0 is used as the default."
+                        echo "/dev/ttyACM0"
+                fi
 
-			echo "/dev/ttyACM0"
-		fi
+                if [ -c /dev/ttyACM0 ]; then
+                        echo "/dev/ttyACM0"
+                else
+                        >&2 echo "I could not find /dev/ttyACM0. Please check your hardware."
+                fi
+        elif usb_dev=$(lsusb -d 10c4:); then
+                usb_dev_count=$(ls -1 /dev/ttyUSB* 2>/dev/null | wc -l)
+                if [ "$usb_dev_count" -gt 1 ]; then
+                        >&2 echo "There are multiple devices connected, that could be Zigbee USB adaptors.
+                                  Please check data/zigbee/configuration.yaml, if the device is wrong.
+                                  /dev/ttyUSB0 is used as the default."
+                        echo "/dev/ttyUSB0"
+                fi
 
-		if [ -c /dev/ttyACM0 ]; then
-			echo "/dev/ttyACM0"
-		else
-			>&2 echo "I could not find /dev/ttyACM0. Please check your hardware."
-		fi
-	else
-		>&2 echo No Texas Instruments USB device found.
+                if [ -c /dev/ttyUSB0 ]; then
+                        echo "/dev/ttyUSB0"
+                else
+                        >&2 echo "I could not find /dev/ttyUSB0. Please check your hardware."
+                fi
+        else
+                >&2 echo "No Texas Instruments or Slaesh CP2622 USB device found."
 
-		echo "False"
-	fi
+                echo "False"
+        fi
 }
+
 
 function create_mosquitto_config {
 	cat > data/mqtt/config/mosquitto.conf <<EOF
@@ -39,6 +55,7 @@ EOF
 touch data/mqtt/config/passwd
 
 }
+
 
 function create_zigbee2mqtt_config {
 	cat > data/zigbee/configuration.yaml <<EOF
@@ -74,6 +91,7 @@ echo '⚠️  Disable permit_join in data/zigbee/configuration.yaml or the Zigbe
 
 }
 
+
 function fix_permissions {
 	echo '📄 Setting the permissions of the configurations in the data folder.'
 	sudo chown 1883:1883 data/mqtt
@@ -100,20 +118,23 @@ function build_data_structure {
 	fix_permissions
 }
 
-function check_dependencies {
-	if ! [ -x "$(command -v docker-compose)" ]; then
-		echo '⚠️  Error: docker-compose is not installed.' >&2
-		exit 1
-	fi
 
-	if ! [ -x "$(command -v git)" ]; then
-		echo '⚠️  Error: git is not installed.' >&2
-		exit 1
-	fi
+function check_dependencies {
+if [ -x "$(command -v docker-compose)" ]; then
+    mycomp="docker-compose"
+    if $(docker compose &>/dev/null) && [ $? -eq 0 ]; then
+        mycomp="docker compose"
+    fi
+elif $(docker compose &>/dev/null) && [ $? -eq 0 ]; then
+        mycomp="docker compose"
+else
+    echo "⚠️  Error: Neither docker-compose nor docker compose are working." >&2
+    exit 1
+fi
 }
 
-function start {
 
+function start {
 	device=$(detect_zigbee_device)
 	if [ $device == "False" ]; then
 		echo '⚠️  No Zigbee adaptor found. Not starting Zigbee2MQTT.'
@@ -125,24 +146,23 @@ function start {
 	fi
 
 	echo '🏃 Starting the containers'
-	docker-compose up -d $container
+	$mycomp up -d $container
 	echo '⚠️  After you made yourself familiar with the setup, it'"'"'s strongly suggested to secure the services. Read the "Security" section in the README!'
 }
 
 function stop {
 	echo '🛑 Stopping all containers'
-	docker-compose stop
+	$mycomp stop
 }
 
 function update {
-
 	if [[ ! -d ".git" ]]
 	then
 		echo "🛑You have manually downloaded the release version of c't-Smart-Home.
 The automatic update only works with a cloned Git repository.
 Try backing up your settings shutting down all containers with 
 
-docker-compose down --remove orphans
+docker(-)compose down --remove orphans
 
 Then copy the current version from GitHub to this folder and run
 
@@ -152,7 +172,7 @@ Alternatively create a Git clone of the repository."
 		exit 1
 	fi
 	echo '☠️  Shutting down all running containers and removing them.'
-	docker-compose down --remove-orphans
+	$mycomp down --remove-orphans
 	if [ ! $? -eq 0 ]; then
 		echo '⚠️  Updating failed. Please check the repository on GitHub.'
 	fi	    
@@ -164,7 +184,7 @@ Alternatively create a Git clone of the repository."
 		echo '⚠️  Updating failed. Please check the repository on GitHub.'
 	fi	    
 	echo '⬇️  Pulling docker images.'
-	docker-compose pull
+	$mycomp pull
 	if [ ! $? -eq 0 ]; then
 		echo '⚠️  Updating failed. Please check the repository on GitHub.'
 	fi	    
