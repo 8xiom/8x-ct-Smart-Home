@@ -45,7 +45,7 @@ COPY package.json .
 FROM base AS build
 
 # Install Build tools
-## npx check did not work anymore, install had to be modified - is it still the case?
+## npx check did not work anymore, install had to be modified - is it still the case?   
 RUN apk add --no-cache --virtual buildtools build-base linux-headers udev eudev-dev avahi-dev libusb-dev libc-dev python3 && \
 ##    npx npm-check-updates -u && \
 ##    npm install --unsafe-perm --no-update-notifier --only=production --no-optional && \
@@ -91,7 +91,7 @@ RUN rm -r /tmp/* && \
     setcap 'cap_net_raw+eip' `which node`
 
 # Env variables
-ENV NODE_RED_VERSION=$NODE_RED_VERSION \
+ENV NODE_RED_VERSION=$NODE_RED_VERSION \    
     NODE_PATH=/usr/src/node-red/node_modules:/data/node_modules \
     FLOWS=flows.json
 
