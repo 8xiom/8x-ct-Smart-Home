@@ -48,12 +48,9 @@
     ],
     "dependencies": {
         "node-red": "latest",
-        "node-red-contrib-fritz": "*",
-        "node-red-contrib-homekit-bridged": "*",
         "node-red-contrib-noble-bluetooth": "*",
-        "node-red-contrib-tado-client": "*",
         "node-red-contrib-zigbee2mqtt": "*",
-        "node-red-dashboard": "*",
 	"@abandonware/bluetooth-hci-socket": "*"
     }
 }
+

@@ -1,4 +1,6 @@
-ARG NODE_VERSION=14
+##ARG NODE_VERSION=16
+##ARG NODE_VERSION=20
+ARG NODE_VERSION=22
 ARG OS=alpine
 
 #### Stage BASE ########################################################################################################
@@ -23,8 +25,13 @@ RUN set -ex && \
     avahi-compat-libdns_sd \
     dbus \
     ffmpeg \
+## BHa: need libcap2-bin for setcap later!
+    libcap \
     bluez &&\
+    mkdir -p /var/run/dbus && \
     dbus-uuidgen --ensure && \
+    npm install -g npm@latest && \
+    npm cache clean --force && \
     mkdir -p /usr/src/node-red /data && \
     deluser --remove-home node && \
     adduser -h /usr/src/node-red -D -H node-red -u 1000 && \
@@ -41,9 +48,11 @@ COPY package.json .
 FROM base AS build
 
 # Install Build tools
+# BHa - tried to add 'libcap2-bin' for using setcap later on (2023-07-02) --> error here!
 RUN apk add --no-cache --virtual buildtools build-base linux-headers udev eudev-dev avahi-dev libusb-dev libc-dev python3 && \
-    npx npm-check-updates -u && \
-    npm install --unsafe-perm --no-update-notifier --only=production --no-optional && \
+##    npx npm-check-updates -u && \
+##    npm install --unsafe-perm --no-update-notifier --only=production --no-optional && \
+    npm install --unsafe-perm --no-update-notifier --omit=dev --no-optional && \
     /tmp/remove_native_gpio.sh && \
     npm dedupe && \
     npm cache clean --force && \
@@ -83,7 +92,7 @@ COPY entrypoint.sh /usr/src/node-red/entrypoint.sh
 RUN rm -r /tmp/* && \
     setcap 'cap_net_raw+eip' `which l2ping` && \
     setcap 'cap_net_raw+eip' `which node`
-
+ 
 # Env variables
 ENV NODE_RED_VERSION=$NODE_RED_VERSION \
     NODE_PATH=/usr/src/node-red/node_modules:/data/node_modules \
