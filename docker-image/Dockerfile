@@ -1,5 +1,3 @@
-##ARG NODE_VERSION=16
-##ARG NODE_VERSION=20
 ARG NODE_VERSION=22
 ARG OS=alpine
 
@@ -48,10 +46,10 @@ COPY package.json .
 FROM base AS build
 
 # Install Build tools
-# BHa - tried to add 'libcap2-bin' for using setcap later on (2023-07-02) --> error here!
+# Adding 'libcap2-bin' for using setcap later on produced an errir (2023-07-02)
+# npx npm-check did not work successfully - reason unclear
 RUN apk add --no-cache --virtual buildtools build-base linux-headers udev eudev-dev avahi-dev libusb-dev libc-dev python3 && \
 ##    npx npm-check-updates -u && \
-##    npm install --unsafe-perm --no-update-notifier --only=production --no-optional && \
     npm install --unsafe-perm --no-update-notifier --omit=dev --no-optional && \
     /tmp/remove_native_gpio.sh && \
     npm dedupe && \
